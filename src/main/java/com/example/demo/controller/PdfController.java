@@ -35,6 +35,8 @@ public class PdfController {
     public ResponseEntity<Resource> generatePdf(@Valid @RequestBody ReportData reportData) {
         log.debug("Generating PDF for report data: {}", reportData);
 
+
+
         try {
             String outputPath = pdfGeneratorService.generatePdfForBasicReport(reportData);
             return createPdfResponse(outputPath);

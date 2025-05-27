@@ -1,50 +1,14 @@
-# PDF Generation Service
+# PDF Report Generator
 
-A Spring Boot application that provides PDF generation capabilities using FreeMarker templates and OpenPDF.
+A Spring Boot application for generating PDF reports using templates and storing report metadata in a database.
 
 ## Features
 
-- PDF generation from HTML templates using FreeMarker
-- Support for dynamic content rendering
-- Integration with OpenPDF for PDF creation
-- Flying Saucer for HTML to PDF conversion
-- H2 in-memory database for data persistence (TBD)
-- RESTful API endpoints for PDF generation
-
-## Technology Stack
-
-- Java 17
-- Spring Boot 3.2.4
-- Spring Data JPA
-- FreeMarker 2.3.32
-- OpenPDF 1.3.30
-- Flying Saucer 9.3.1
-- H2 Database
-- Lombok
-- Maven
-
-## Project Structure
-
-```
-src/
-├── main/
-│   ├── java/
-│   │   └── com/
-│   │       └── example/
-│   │           └── demo/
-│   │               ├── controller/    # REST controllers
-│   │               ├── service/       # Business logic
-│   │               ├── repository/    # Data access
-│   │               ├── model/         # Entity classes
-│   │               ├── dto/           # Data Transfer Objects
-│   │               ├── mapper/        # Object mappers
-│   │               └── util/          # Utility classes
-│   └── resources/
-│       ├── templates/                 # FreeMarker templates
-│       ├── static/                    # Static resources
-│       └── application.properties     # Application configuration
-└── test/                             # Test classes
-```
+- PDF generation using FreeMarker templates
+- Report metadata storage in H2 database
+- RESTful API endpoints for report management
+- Report status tracking
+- Audit trail for report creation and updates
 
 ## Prerequisites
 
@@ -54,77 +18,64 @@ src/
 ## Getting Started
 
 1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   ```
+```bash
+git clone <repository-url>
+cd pdf-report-docs
+```
 
-2. Navigate to the project directory:
-   ```bash
-   cd pdf-generator
-   ```
+2. Build the project:
+```bash
+mvn clean install
+```
 
-3. Build the project:
-   ```bash
-   mvn clean install
-   ```
-
-4. Run the application:
-   ```bash
-   mvn spring-boot:run
-   ```
+3. Run the application:
+```bash
+mvn spring-boot:run
+```
 
 The application will start on `http://localhost:8080`
 
-## Configuration
+## Database Access
 
-The application can be configured through `application.properties`:
+The application uses H2 in-memory database. You can access the H2 console at:
+- URL: `http://localhost:8080/h2-console`
+- JDBC URL: `jdbc:h2:mem:reportdb`
+- Username: `sa`
+- Password: `password`
 
-- Server port
-- Database settings
-- Template locations
-- PDF generation settings
+## Project Structure
+
+```
+src/main/java/com/example/demo/
+├── controller/    # REST controllers
+├── dto/          # Data Transfer Objects
+├── entity/       # JPA entities
+├── repository/   # Database repositories
+├── service/      # Business logic
+└── util/         # Utility classes
+```
 
 ## API Endpoints
 
-### PDF Generation
-- `POST /api/pdf/generate` - Generate PDF from template
-- `GET /api/pdf/templates` - List available templates (TBD)
-- `GET /api/pdf/{id}` - Download generated PDF (TBD)
+- `POST /api/reports` - Create a new report
+- `GET /api/reports` - Get all reports
+- `GET /api/reports/{reportId}` - Get a specific report
+- `PUT /api/reports/{reportId}` - Update a report
+- `DELETE /api/reports/{reportId}` - Delete a report
+- `GET /api/reports/status/{status}` - Get reports by status
+- `GET /api/reports/search` - Search reports by title
 
 ## Development
 
-### Adding New Templates
+### Building
 
-1. Create a new FreeMarker template in `src/main/resources/templates/`
-2. Use FreeMarker syntax for dynamic content
-3. Register the template in the template service
+```bash
+mvn clean install
+```
 
-### Building PDFs
+### Running Tests
 
-The project uses:
-- FreeMarker for template processing
-- OpenPDF for PDF generation
-- Flying Saucer for HTML to PDF conversion
-
-## Testing
-
-Run tests using Maven: TBD
 ```bash
 mvn test
 ```
-
-The project includes:
-- Unit tests
-- Integration tests
-- Controller tests
-
-## Dependencies
-
-Key dependencies are managed in `pom.xml`:
-- Spring Boot Starters (Web, Data JPA)
-- FreeMarker for templating
-- OpenPDF for PDF generation
-- Flying Saucer for HTML to PDF conversion
-- H2 Database for development (TBD)
-- Lombok for reducing boilerplate code
 

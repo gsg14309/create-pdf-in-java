@@ -1,5 +1,7 @@
 {
-  "title": "Sample Report",
+  "title": "Sample Report For Pdf Report ",
+  "reportId": "REP-2024-001",
+  "createdBy": "gsr",
   "items": [
     {
       "name": "Item 1",

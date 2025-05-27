@@ -54,7 +54,7 @@ public class PdfGeneratorService {
      * @throws PDFGenerationException if PDF generation fails
      */
     public String generatePdfForBasicReport(ReportData reportData) {
-        validateInput(BASIC_REPORT_TEMPLATE_NAME, reportData);
+
         
         log.info("Starting PDF generation for template: {}", BASIC_REPORT_TEMPLATE_NAME);
         log.debug("Template data: {}", reportData);
@@ -81,14 +81,6 @@ public class PdfGeneratorService {
         return savedPath;
     }
 
-    private void validateInput(String templateName, ReportData reportData) {
-        if (templateName == null || templateName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Template name cannot be null or empty");
-        }
-        if (reportData == null) {
-            throw new IllegalArgumentException("Report data cannot be null");
-        }
-    }
 
     private String savePdfToFileSystem(String templateName, byte[] pdfContent) {
         try {
