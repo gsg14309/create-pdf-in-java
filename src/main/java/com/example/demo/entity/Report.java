@@ -35,8 +35,8 @@ public class Report {
     private LocalDateTime updatedAt;
 
     @Column(name = "created_by")
-    private String createdBy;
+    private String createdBy = "SYSTEM";
 
     @Column(name = "updated_by")
-    private String updatedBy;
+    private String updatedBy = "SYSTEM";
 } 
