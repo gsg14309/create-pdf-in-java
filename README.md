@@ -57,13 +57,8 @@ src/main/java/com/example/demo/
 
 ## API Endpoints
 
-- `POST /api/reports` - Create a new report
-- `GET /api/reports` - Get all reports
-- `GET /api/reports/{reportId}` - Get a specific report
-- `PUT /api/reports/{reportId}` - Update a report
-- `DELETE /api/reports/{reportId}` - Delete a report
-- `GET /api/reports/status/{status}` - Get reports by status
-- `GET /api/reports/search` - Search reports by title
+- `POST /api/pdf/generate` - Create a new report
+
 
 ## Development
 
