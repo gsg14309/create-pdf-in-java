@@ -26,3 +26,5 @@ replay_pid*
 # Thumbnails
 .DS_Store
 /target
+.idea/
+/pdf-storage
