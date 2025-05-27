@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.ReportData;
+import com.example.demo.entity.Report;
+import com.example.demo.entity.ReportStatus;
 import com.example.demo.exception.PDFGenerationException;
 import com.example.demo.util.FileStorageUtil;
 import freemarker.template.Configuration;
@@ -30,14 +32,17 @@ public class PdfGeneratorService {
 
     private final Configuration freemarkerConfig;
     private final FileStorageUtil fileStorageUtil;
+    private final ReportService reportService;
 
     // Explicitly define the constructor with @Qualifier to avoid ambiguity with springs own freemarkerConfig bean
     //lombok will not generate the constructor using qualifier
     public PdfGeneratorService( @Qualifier("customFreemarkerConfig") Configuration freemarkerConfig,
-                                FileStorageUtil fileStorageUtil)
+                                FileStorageUtil fileStorageUtil,
+                                ReportService reportService)
     {
         this.freemarkerConfig = freemarkerConfig;
         this.fileStorageUtil = fileStorageUtil;
+        this.reportService = reportService;
     }
 
 
@@ -63,7 +68,16 @@ public class PdfGeneratorService {
         byte[] pdfContent = generatePdfFromContent(htmlContent);
         String savedPath = savePdfToFileSystem(BASIC_REPORT_TEMPLATE_NAME, pdfContent);
         
-        log.info("PDF generation completed. Saved at: {}", savedPath);
+        // Create and persist the report
+        Report report = new Report();
+        report.setTitle(reportData.getTitle());
+        report.setReportId(UUID.randomUUID().toString());
+        report.setStatus(ReportStatus.COMPLETED);
+        report.setCreatedBy(reportData.getCreatedBy());
+        report.setUpdatedBy(reportData.getCreatedBy());
+        reportService.createReport(report);
+        
+        log.info("PDF generation completed. Saved at: {} and report persisted with ID: {}", savedPath, report.getReportId());
         return savedPath;
     }
 
