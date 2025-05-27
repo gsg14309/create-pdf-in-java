@@ -1,7 +1,6 @@
 {
   "title": "Sample Report For Pdf Report ",
   "reportId": "REP-2024-001",
-  "createdBy": "gsr",
   "items": [
     {
       "name": "Item 1",
@@ -18,22 +17,5 @@
       "description": "Description for Item 3",
       "value": "Value 3"
     }
-  ],
-  "data": {
-    "reportId": "REP-2024-001",
-    "generatedDate": "2024-03-21",
-    "author": "John Doe",
-    "department": "Finance",
-    "status": "Final",
-    "version": "1.0",
-    "metadata": {
-      "createdBy": "System",
-      "lastModified": "2024-03-21T14:30:00",
-      "templateVersion": "2.1"
-    },
-    "summary": "This is a sample report with various items and metadata",
-    "tags": ["sample", "report", "test"],
-    "isConfidential": true,
-    "approvalStatus": "Approved"
-  }
+  ]
 }

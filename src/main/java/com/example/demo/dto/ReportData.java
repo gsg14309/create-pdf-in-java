@@ -14,11 +14,8 @@ public class ReportData {
     @NotBlank(message = "Title is required")
     private String title;
 
-    @NotBlank(message = "Creator information is required")
-    private String createdBy;
-
     @NotNull(message = "Items list cannot be null")
     private List<ReportItem> items;
 
     private Map<String, Object> data;
-} 
+}

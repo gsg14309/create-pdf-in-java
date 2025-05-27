@@ -1,17 +1,14 @@
-package com.example.demo.service;
+package com.example.demo.incubation;
 
 import com.example.demo.dto.ReportData;
-import com.example.demo.entity.Report;
-import com.example.demo.entity.ReportStatus;
 import com.example.demo.exception.PDFGenerationException;
-import com.example.demo.repository.ReportRepository;
 import com.example.demo.util.FileStorageUtil;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -23,86 +20,85 @@ import java.util.UUID;
 /**
  * Service for generating PDF documents from templates.
  */
-@Service
-@Slf4j
+//@Service
 public class PdfGeneratorService {
 
+    private static final Logger logger = LoggerFactory.getLogger(PdfGeneratorService.class);
     private static final String PDF_EXTENSION = ".pdf";
-
-    private static final String BASIC_REPORT_TEMPLATE_NAME = "report.ftl";
+    private static final String TEMPLATE_DIRECTORY = "templates";
 
     private final Configuration freemarkerConfig;
-    private final FileStorageUtil fileStorageUtil;
-    private final ReportRepository reportRepository;
 
-    // Explicitly define the constructor with @Qualifier to avoid ambiguity with springs own freemarkerConfig bean
-    //lombok will not generate the constructor using qualifier
-    public PdfGeneratorService( @Qualifier("customFreemarkerConfig") Configuration freemarkerConfig,
-                                FileStorageUtil fileStorageUtil,
-                                ReportRepository reportRepository)
-    {
-        this.freemarkerConfig = freemarkerConfig;
-        this.fileStorageUtil = fileStorageUtil;
-        this.reportRepository = reportRepository;
+    @Autowired
+    private FileStorageUtil fileStorageUtil;
+
+    public PdfGeneratorService() {
+        logger.info("Initializing PdfGeneratorService");
+        freemarkerConfig = new Configuration(Configuration.VERSION_2_3_32);
+        freemarkerConfig.setClassLoaderForTemplateLoading(
+            this.getClass().getClassLoader(), TEMPLATE_DIRECTORY);
+        freemarkerConfig.setDefaultEncoding("UTF-8");
+        logger.debug("FreeMarker configuration initialized");
     }
-
 
     /**
      * Generates a PDF document from the specified template and data.
      *
+     * @param templateName the name of the template to use
      * @param reportData the data to populate the template with
      * @return the path where the PDF was saved
      * @throws PDFGenerationException if PDF generation fails
      */
-    public String generatePdfForBasicReport(ReportData reportData) {
-
+    public String generatePdf(String templateName, ReportData reportData) {
+        validateInput(templateName, reportData);
         
-        log.info("Starting PDF generation for template: {}", BASIC_REPORT_TEMPLATE_NAME);
-        log.debug("Template data: {}", reportData);
+        logger.info("Starting PDF generation for template: {}", templateName);
+        logger.debug("Template data: {}", reportData);
 
-        Template template = getReportTemplate(BASIC_REPORT_TEMPLATE_NAME);
-        log.debug("Template loaded successfully");
+        Template template = getReportTemplate(templateName);
+        logger.debug("Template loaded successfully");
 
         String htmlContent = addDataIntoTemplate(reportData, template);
-        log.debug("Template processed successfully");
+        logger.debug("Template processed successfully");
 
         byte[] pdfContent = generatePdfFromContent(htmlContent);
-        String savedPath = savePdfToFileSystem(BASIC_REPORT_TEMPLATE_NAME, pdfContent);
+        String savedPath = savePdfToFileSystem(templateName, pdfContent);
         
-        // Create and persist the report
-        Report report = new Report();
-        report.setTitle(reportData.getTitle());
-        report.setReportId(UUID.randomUUID().toString());
-        report.setStatus(ReportStatus.COMPLETED);
-        reportRepository.save(report);
-        
-        log.info("PDF generation completed. Saved at: {} and report persisted with ID: {}", savedPath, report.getReportId());
+        logger.info("PDF generation completed. Saved at: {}", savedPath);
         return savedPath;
     }
 
+    private void validateInput(String templateName, ReportData reportData) {
+        if (templateName == null || templateName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Template name cannot be null or empty");
+        }
+        if (reportData == null) {
+            throw new IllegalArgumentException("Report data cannot be null");
+        }
+    }
 
     private String savePdfToFileSystem(String templateName, byte[] pdfContent) {
         try {
             String fileName = String.format("%s_%s%s", templateName, UUID.randomUUID(), PDF_EXTENSION);
             String savedPath = fileStorageUtil.savePdf(pdfContent, fileName);
-            log.info("PDF saved to file system at: {}", savedPath);
+            logger.info("PDF saved to file system at: {}", savedPath);
             return savedPath;
         } catch (IOException e) {
-            log.error("Failed to save PDF: {}", e.getMessage(), e);
+            logger.error("Failed to save PDF: {}", e.getMessage(), e);
             throw new PDFGenerationException("Failed to save PDF", e);
         }
     }
 
     private byte[] generatePdfFromContent(String htmlContent) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            log.debug("Creating PDF in memory");
+            logger.debug("Creating PDF in memory");
             ITextRenderer renderer = new ITextRenderer();
             renderer.setDocumentFromString(htmlContent);
             renderer.layout();
             renderer.createPDF(outputStream, true);
             return outputStream.toByteArray();
         } catch (IOException e) {
-            log.error("Failed to generate PDF: {}", e.getMessage(), e);
+            logger.error("Failed to generate PDF: {}", e.getMessage(), e);
             throw new PDFGenerationException("Failed to generate PDF", e);
         }
     }
@@ -112,7 +108,7 @@ public class PdfGeneratorService {
             template.process(reportData, stringWriter);
             return stringWriter.toString();
         } catch (TemplateException | IOException e) {
-            log.error("Failed to process template: {}", e.getMessage(), e);
+            logger.error("Failed to process template: {}", e.getMessage(), e);
             throw new PDFGenerationException("Failed to process template", e);
         }
     }
@@ -121,7 +117,7 @@ public class PdfGeneratorService {
         try {
             return freemarkerConfig.getTemplate(templateName);
         } catch (IOException e) {
-            log.error("Failed to load template {}: {}", templateName, e.getMessage(), e);
+            logger.error("Failed to load template {}: {}", templateName, e.getMessage(), e);
             throw new PDFGenerationException("Failed to load template: " + templateName, e);
         }
     }
