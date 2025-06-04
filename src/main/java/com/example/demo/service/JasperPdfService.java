@@ -1,120 +1,81 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.ReportData;
+import com.example.demo.dto.ReportItem;
+import com.example.demo.exception.PDFGenerationException;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
-import net.sf.jasperreports.engine.util.JRLoader;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Service
-public class JasperPdfService {
+@Service("jasperPdfService")
+public class JasperPdfService implements IPdfGenerator {
 
-    /**
-     * Generate PDF from a JRXML template and data
-     * @param templatePath Path to the JRXML template in the classpath
-     * @param data List of data objects to be used in the report
-     * @param outputPath Path where the PDF should be saved
-     * @return Path to the generated PDF file
-     */
-    public Path generatePdf(String templatePath, List<?> data, Path outputPath) {
+    @Override
+    public String generatePdf(ReportData reportData) {
+        log.info("Starting PDF generation for report with ID: {}", reportData.getReportId());
+        log.debug("Report data: title={}, items count={}", reportData.getTitle(), reportData.getItems().size());
+        
         try {
             // Load the JRXML template
-            InputStream templateStream = new ClassPathResource(templatePath).getInputStream();
-            JasperReport jasperReport = JasperCompileManager.compileReport(templateStream);
+            String templatePath = "reports/sample-report.jrxml";
+            log.debug("Loading JRXML template from: {}", templatePath);
+            
+            JasperReport jasperReport = JasperCompileManager.compileReport(
+                    getClass().getClassLoader().getResourceAsStream(templatePath));
+            log.debug("Successfully compiled JRXML template");
 
-            // Create data source
-            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(data);
+            // Convert ReportData items to a list of maps
+            log.debug("Converting ReportData items to list of maps");
+            List<Map<String, Object>> dataList = new ArrayList<>();
+            for (ReportItem item : reportData.getItems()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("name", item.getName());
+                row.put("description", item.getDescription());
+                row.put("value", item.getValue());
+                dataList.add(row);
+                log.trace("Added item to data list: name={}, description={}, value={}", 
+                    item.getName(), item.getDescription(), item.getValue());
+            }
+            log.debug("Converted {} items to data list", dataList.size());
 
-            // Set parameters
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("REPORT_TITLE", "Generated Report");
-
-            // Fill the report
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
-
-            // Export to PDF
-            JasperExportManager.exportReportToPdfFile(jasperPrint, outputPath.toString());
-
-            return outputPath;
-        } catch (JRException | IOException e) {
-            log.error("Error generating PDF: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to generate PDF", e);
-        }
-    }
-
-    /**
-     * Generate PDF from a JRXML template and data, returning the PDF as a byte array
-     * @param templatePath Path to the JRXML template in the classpath
-     * @param data List of data objects to be used in the report
-     * @return PDF as byte array
-     */
-    public byte[] generatePdfBytes(String templatePath, List<?> data) {
-        try {
-            // Load the JRXML template
-            InputStream templateStream = new ClassPathResource(templatePath).getInputStream();
-            JasperReport jasperReport = JasperCompileManager.compileReport(templateStream);
-
-            // Create data source
-            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(data);
+            // Create the data source
+            log.debug("Creating JRBeanCollectionDataSource");
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(dataList);
 
             // Set parameters
+            log.debug("Setting report parameters");
             Map<String, Object> parameters = new HashMap<>();
-            parameters.put("REPORT_TITLE", "Generated Report");
+            parameters.put("REPORT_TITLE", reportData.getTitle());
+            parameters.put("REPORT_ID", reportData.getReportId());
+            parameters.put("GENERATED_DATE", new Date());
+            log.trace("Report parameters: title={}, id={}, generatedDate={}", 
+                reportData.getTitle(), reportData.getReportId(), new Date());
 
-            // Fill the report
+            // Create a temporary file for the PDF
+            log.debug("Creating temporary file for PDF output");
+            File tempFile = File.createTempFile("report", ".pdf");
+            log.debug("Temporary file created at: {}", tempFile.getAbsolutePath());
+
+            // Fill the report and export to PDF
+            log.debug("Filling report with data");
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
+            log.debug("Exporting report to PDF");
+            JasperExportManager.exportReportToPdfFile(jasperPrint, tempFile.getAbsolutePath());
+            log.info("PDF generation completed successfully. Output file: {}", tempFile.getAbsolutePath());
 
-            // Export to PDF bytes
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            JasperExportManager.exportReportToPdfStream(jasperPrint, outputStream);
-            return outputStream.toByteArray();
-        } catch (JRException | IOException e) {
+            return tempFile.getAbsolutePath();
+        } catch (Exception e) {
             log.error("Error generating PDF: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to generate PDF", e);
-        }
-    }
-
-    /**
-     * Generate PDF from a compiled JasperReport (.jasper file) and data
-     * @param jasperPath Path to the compiled JasperReport in the classpath
-     * @param data List of data objects to be used in the report
-     * @param outputPath Path where the PDF should be saved
-     * @return Path to the generated PDF file
-     */
-    public Path generatePdfFromJasper(String jasperPath, List<?> data, Path outputPath) {
-        try {
-            // Load the compiled JasperReport
-            InputStream jasperStream = new ClassPathResource(jasperPath).getInputStream();
-            JasperReport jasperReport = (JasperReport) JRLoader.loadObject(jasperStream);
-
-            // Create data source
-            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(data);
-
-            // Set parameters
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("REPORT_TITLE", "Generated Report");
-
-            // Fill the report
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
-
-            // Export to PDF
-            JasperExportManager.exportReportToPdfFile(jasperPrint, outputPath.toString());
-
-            return outputPath;
-        } catch (JRException | IOException e) {
-            log.error("Error generating PDF: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to generate PDF", e);
+            throw new PDFGenerationException("Failed to generate PDF using JasperReports", e);
         }
     }
 } 

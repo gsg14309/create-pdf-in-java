@@ -2,10 +2,11 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.ReportData;
 import com.example.demo.exception.PDFGenerationException;
+import com.example.demo.service.IPdfGenerator;
 import com.example.demo.service.PdfGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -23,22 +24,22 @@ import java.io.File;
 @Slf4j
 @RestController
 @RequestMapping("/api/pdf")
-@RequiredArgsConstructor
 public class PdfController {
-
 
     private static final String OUTPUT_FILENAME = "report.pdf";
 
-    private final PdfGeneratorService pdfGeneratorService;
+    private final IPdfGenerator pdfGenerator;
+
+    public PdfController(@Qualifier("pdfGeneratorService") IPdfGenerator pdfGenerator) {
+        this.pdfGenerator = pdfGenerator;
+    }
 
     @PostMapping("/generate")
     public ResponseEntity<Resource> generatePdf(@Valid @RequestBody ReportData reportData) {
         log.debug("Generating PDF for report data: {}", reportData);
 
-
-
         try {
-            String outputPath = pdfGeneratorService.generatePdfForBasicReport(reportData);
+            String outputPath = pdfGenerator.generatePdf(reportData);
             return createPdfResponse(outputPath);
         } catch (Exception e) {
             log.error("Failed to generate PDF: {}", e.getMessage(), e);

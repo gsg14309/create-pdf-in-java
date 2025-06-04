@@ -1,28 +1,38 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.ReportData;
-import com.example.demo.service.JasperPdfService;
+import com.example.demo.dto.ReportData;
+import com.example.demo.dto.ReportItem;
+import com.example.demo.service.IPdfGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/reports")
-@RequiredArgsConstructor
 public class JasperReportController {
 
-    private final JasperPdfService jasperPdfService;
+    private final IPdfGenerator pdfGenerator;
+
+    private static final String OUTPUT_FILENAME = "report.pdf";
+
+    public JasperReportController(@Qualifier("jasperPdfService") IPdfGenerator pdfGenerator) {
+        this.pdfGenerator = pdfGenerator;
+    }
 
     /**
      * Generate PDF report and return as file download
@@ -32,15 +42,29 @@ public class JasperReportController {
     public ResponseEntity<Resource> generatePdfReport() {
         try {
             // Create sample data
-            List<ReportData> data = Arrays.asList(
-                new ReportData("First item"),
-                new ReportData("Second item"),
-                new ReportData("Third item")
-            );
+            ReportData reportData = new ReportData();
+            reportData.setReportId("SAMPLE-001");
+            reportData.setTitle("Sample Report");
+            
+            List<ReportItem> items = new ArrayList<>();
+            ReportItem item1 = new ReportItem();
+            item1.setName("Item 1");
+            item1.setDescription("Description 1");
+            item1.setValue("Value 1");
+            items.add(item1);
+            
+            ReportItem item2 = new ReportItem();
+            item2.setName("Item 2");
+            item2.setDescription("Description 2");
+            item2.setValue("Value 2");
+            items.add(item2);
+            
+            reportData.setItems(items);
+            reportData.setData(new HashMap<>());
 
             // Generate PDF
-            Path outputPath = Files.createTempFile("report-", ".pdf");
-            jasperPdfService.generatePdf("reports/sample-report.jrxml", data, outputPath);
+            String pdfPath = pdfGenerator.generatePdf(reportData);
+            Path outputPath = Path.of(pdfPath);
 
             // Create resource from file
             ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(outputPath));
@@ -59,49 +83,28 @@ public class JasperReportController {
         }
     }
 
-    /**
-     * Generate PDF report and return as byte array
-     * @return PDF as byte array
-     */
-    @GetMapping("/view")
-    public ResponseEntity<byte[]> viewPdfReport() {
+
+    @PostMapping("/generate")
+    public ResponseEntity<Resource> generateCustomReport(@RequestBody ReportData reportData) {
         try {
-            // Create sample data
-            List<ReportData> data = Arrays.asList(
-                new ReportData("First item"),
-                new ReportData("Second item"),
-                new ReportData("Third item")
-            );
+            // Generate PDF
+            String pdfPath = pdfGenerator.generatePdf(reportData);
 
-            // Generate PDF bytes
-            byte[] pdfBytes = jasperPdfService.generatePdfBytes("reports/sample-report.jrxml", data);
 
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .body(pdfBytes);
+            return createPdfResponse(pdfPath);
         } catch (Exception e) {
             log.error("Error generating PDF report: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    /**
-     * Generate PDF report with custom data
-     * @param data List of report data
-     * @return PDF as byte array
-     */
-    @PostMapping("/generate")
-    public ResponseEntity<byte[]> generateCustomReport(@RequestBody List<ReportData> data) {
-        try {
-            // Generate PDF bytes
-            byte[] pdfBytes = jasperPdfService.generatePdfBytes("reports/sample-report.jrxml", data);
+    private ResponseEntity<Resource> createPdfResponse(String outputPath) {
+        File file = new File(outputPath);
+        Resource resource = new FileSystemResource(file);
 
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .body(pdfBytes);
-        } catch (Exception e) {
-            log.error("Error generating PDF report: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + OUTPUT_FILENAME)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(resource);
     }
 } 

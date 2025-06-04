@@ -25,7 +25,7 @@ import java.util.UUID;
  */
 @Service
 @Slf4j
-public class PdfGeneratorService {
+public class PdfGeneratorService implements IPdfGenerator{
 
     private static final String PDF_EXTENSION = ".pdf";
 
@@ -54,7 +54,7 @@ public class PdfGeneratorService {
      * @return the path where the PDF was saved
      * @throws PDFGenerationException if PDF generation fails
      */
-    public String generatePdfForBasicReport(ReportData reportData) {
+    public String generatePdf(ReportData reportData) {
 
         
         log.info("Starting PDF generation for template: {}", BASIC_REPORT_TEMPLATE_NAME);
