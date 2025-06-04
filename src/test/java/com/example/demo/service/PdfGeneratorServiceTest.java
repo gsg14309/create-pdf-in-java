@@ -17,11 +17,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,7 +73,7 @@ class PdfGeneratorServiceTest {
         when(fileStorageUtil.savePdf(any(), anyString())).thenReturn("/path/to/saved/file.pdf");
 
         // Act
-        String result = pdfGeneratorService.generatePdfForBasicReport(reportData);
+        String result = pdfGeneratorService.generatePdf(reportData);
 
         // Assert
         assertNotNull(result);
@@ -92,7 +90,7 @@ class PdfGeneratorServiceTest {
 
         // Act & Assert
         assertThrows(PDFGenerationException.class, () -> 
-            pdfGeneratorService.generatePdfForBasicReport(reportData)
+            pdfGeneratorService.generatePdf(reportData)
         );
         verify(freemarkerConfig).getTemplate(eq(TEMPLATE_NAME));
     }
@@ -112,7 +110,7 @@ class PdfGeneratorServiceTest {
 
         // Act & Assert
         assertThrows(PDFGenerationException.class, () -> 
-            pdfGeneratorService.generatePdfForBasicReport(reportData)
+            pdfGeneratorService.generatePdf(reportData)
         );
         verify(freemarkerConfig).getTemplate(eq(TEMPLATE_NAME));
     }
@@ -131,7 +129,7 @@ class PdfGeneratorServiceTest {
         when(fileStorageUtil.savePdf(any(), anyString())).thenReturn("/path/to/saved/file.pdf");
 
         // Act
-        pdfGeneratorService.generatePdfForBasicReport(reportData);
+        pdfGeneratorService.generatePdf(reportData);
 
         // Assert
         verify(reportRepository).save(argThat(report -> {
