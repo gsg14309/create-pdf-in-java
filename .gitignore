@@ -28,3 +28,4 @@ replay_pid*
 /target
 .idea/
 /pdf-storage
+src/main/resources/templates/logo.png
